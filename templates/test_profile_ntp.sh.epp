@@ -1,0 +1,66 @@
+<%- | String $success_color, String $error_color, Array $validation_data | -%>
+#!/bin/bash
+
+# variables passed in via profile::ntp
+console_success="<%= $success_color %>"
+console_error="<%= $error_color %>"
+correct_ntp="<%= $validation_data %>"
+
+# get current ntp.conf on server, used grep and awk to extract server IP
+#
+# command: cat /etc/ntp.conf | grep -v '^#' | grep server | awk '$1 == "server" {print $2"\n"$3}'
+# ouput:
+# 10.0.10.21
+# iburst
+# 10.0.10.22
+# iburst
+# 172.21.0.7
+# iburst
+current_ntp=`cat /etc/ntp.conf | grep -v '^#' | grep server | awk '$1 == "server" {print $2"\n"$3}'`
+
+# get expected ntp configuration from passed in array in the same format as ntp.conf
+# ouput:
+# 10.0.10.21
+# iburst
+# 10.0.10.22
+# iburst
+# 172.21.0.7
+# iburst
+correct_ntp="$(echo "${correct_ntp:1:${#correct_ntp}-2}" | tr -d ','| tr "[:space:]" "\n")"
+
+# write results to console
+if [ "$current_ntp" != "$correct_ntp" ]; then
+  echo -e "$console_error FAIL: PROFILE::NTP found:\n$current_ntp\nexpected:\n$correct_ntp \e[0m"
+else
+  echo -e "$console_success PASS: PROFILE::NTP ntp servers $correct_ntp \e[0m"
+fi
+
+# run ntpstat command
+# exit status 0 - Clock is synchronised.
+# exit status 1 - Clock is not synchronised.
+# exit status 2 - If clock state is indeterminant, for example if ntpd is not contactable
+ntpstat
+exit_code=$?
+
+# write results to console
+if [ $exit_code = 0 ]; then
+  echo -e "$console_success PASS: PROFILE::NTP exit status $exit_code - Clock is synchronised \e[0m"
+else
+  echo -e "$console_error FAIL: PROFILE::NTP exit status $exit_code - Clock is not synchronised \e[0m"
+fi
+
+# run ntpq -pn
+# if a server reports " ", the ntp server cannot be reached
+#“x” – Out of tolerance, do not use (discarded by intersection algorithm);
+#“–” – Out of tolerance, do not use (discarded by the cluster algorithm);
+#“#” – Good remote peer or server but not utilised (not among the first six peers sorted by synchronization distance, ready as a backup source);
+#“+” – Good and a preferred remote peer or server (included by the combine algorithm);
+#“*” – The remote peer or server presently used as the primary reference;
+#“o” – PPS peer (when the prefer peer is valid). The actual system synchronization is derived from a pulse-per-second (PPS) signal, either indirectly via the PPS reference clock driver or directly via kernel interface.
+ntpq=`ntpq -pn | awk '{print $1}' | cut -c1`
+
+if [[ "$ntpq" =~ [0-9] ]]; then
+  echo -e "$console_error FAIL: PROFILE::NTP found an ntp server that cannot be reached \e[0m"
+else
+  echo -e "$console_success PASS: PROFILE::NTP ntpq response $ntpq \e[0m"
+fi
