@@ -10,13 +10,15 @@ Determining which ntp servers to use
 
 ## HIERA EXAMPLE:
 ```
-  profile::ntp::servers:
-    - "0.us.pool.ntp.org iburst"
-    - "1.us.pool.ntp.org iburst"
-    - "2.us.pool.ntp.org iburst"
-    - "3.us.pool.ntp.org iburst"
+profile::ntp::servers:
+  - "0.us.pool.ntp.org iburst"
+  - "1.us.pool.ntp.org iburst"
+  - "2.us.pool.ntp.org iburst"
+  - "3.us.pool.ntp.org iburst"
 
-  profile::ntp::package_ensure: '4.2.6p5-5.el6.centos.4'
+profile::ntp::package_ensure:
+  RedHat6:  '4.2.6p5-5.el6.centos.4'
+  RedHat7:  '4.2.6p5-22.el7.centos.2'
 
 ```
 
