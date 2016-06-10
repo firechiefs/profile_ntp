@@ -17,7 +17,7 @@
 # module dependencies
 # puppet module install puppetlabs-ntp
 
-class profile::ntp {
+class profile_ntp {
   # returns RedHat6 or RedHat7
   $osfamily_majrel = "${::osfamily}${::operatingsystemmajrelease}"
   # Hiera lookups
